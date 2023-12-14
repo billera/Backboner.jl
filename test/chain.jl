@@ -9,7 +9,7 @@
         @test chain.backbone.coords == coords
         @test chain.aavector == fill('G', length(chain))
         @test chain.ssvector == fill(' ', length(chain))
-        @test !has_assigned_ss(chain)
+        @test !has_complete_ss(chain)
         @test length(chain) == 5
         @test size(chain) == (5,)
         @test Chain(remove_column(backbone, 4)).backbone == add_oxygens(remove_column(backbone, 4))

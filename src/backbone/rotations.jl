@@ -49,8 +49,7 @@ end
 Returns the locations and rotation matrices of residues in a backbone,
 according to a defined standard triangle (`Backboner.STANDARD_TRIANGLE_ANGSTROM`).
 """
-function backbone_to_locs_and_rots(backbone::Backbone{N, T}, unit::Symbol=:angstrom) where {N, T}
-    @assert 3 <= N <= 4 "backbone must have 3 or 4 atoms per residue"
+function backbone_to_locs_and_rots(backbone::Backbone{3, T}, unit::Symbol=:angstrom) where T
     L = length(backbone)
     locations = Array{T}(undef, 3, L)
     rot_matrices = Array{T}(undef, 3, 3, L)

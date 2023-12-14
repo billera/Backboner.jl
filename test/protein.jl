@@ -9,7 +9,7 @@
         @test length(protein) == 2
         @test length.(protein) == [5, 6]
         @test summary(protein) == "Protein with 2 chains"
-        @test !has_assigned_ss(protein)
+        @test !has_complete_ss(protein)
     end
 
 end

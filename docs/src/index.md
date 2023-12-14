@@ -32,7 +32,7 @@ The `Protein` type wraps a vector of `Chain`s.
 ```jldoctest
 julia> using Backboner
 
-julia> protein = pdb_to_protein("test/data/1ZAK.pdb")
+julia> protein = read_pdb("test/data/1ZAK.pdb")
 2-element Protein{Float32}:
  Chain A with 220 residues
  Chain B with 220 residues
@@ -47,7 +47,7 @@ julia> new_protein = Protein([protein["A"]]) # create a new protein with a singl
 1-element Protein{Float32}:
  Chain A with 220 residues
 
-julia> protein_to_pdb(new_protein, "test/data/1ZAK_A.pdb");
+julia> write_pdb(new_protein, "test/data/1ZAK_A.pdb");
 ```
 
 The `Chain` type wraps the `Backbone{4}` type (4, because it stores the positions of 4 atoms per residue: N, CA, C, O).

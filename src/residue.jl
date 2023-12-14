@@ -1,22 +1,25 @@
-export Residue, backbone_atom_coord_matrix
+export Residue, backbone_atom_coords
 
-struct Residue
+struct Residue{T}
     index::Integer
-    backbone::Backbone{4}
+    backbone::Backbone{3, T}
+    oxygen::AbstractVector{T}
     aa::Char
     ss::Char
-
-    function Residue(
-        index::Integer,
-        backbone::Backbone{4},
-        aa::Char = 'G',
-        ss::Char = ' ',
-    )
-        return new(index, backbone, aa, ss)
-    end
 end
 
-backbone_atom_coord_matrix(residue::Residue) = residue.backbone[residue.index]
+backbone_atom_coords(residue::Residue) = residue.backbone[residue.index]
+
+function Base.getproperty(residue::Residue, property::Symbol)
+    if property in fieldnames
+        return getfield(residue, property)
+    elseif property in residue.backbone.atomnames
+        return getindex(residue.backbone, property)[residue.index]
+    
+    else
+        error("Residue does not have a field or atom named $property")
+    end
+end
 
 function Base.summary(residue::Residue)
     index = lpad(string(residue.index), length(string(length(residue.backbone))))

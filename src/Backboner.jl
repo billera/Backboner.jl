@@ -5,9 +5,9 @@ using LinearAlgebra
 import Rotations
 import PDBTools
 
-export has_assigned_ss
+export has_complete_ss
 
-has_assigned_ss(ssvector::Vector{Char}) = all(!=(' '), ssvector)
+has_complete_ss(ssvector::Vector{Char}) = all(!=(' '), ssvector)
 
 include("backbone/backbone.jl")
 include("residue.jl")

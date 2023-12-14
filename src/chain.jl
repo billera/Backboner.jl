@@ -1,29 +1,31 @@
 export Chain
 
+# TODO: use symbols for IDs?
+
 """
-    Chain <: AbstractVector{Residue}
+    Chain{T} <: AbstractVector{Residue}
 
 A chain has an identifier (usually a single letter) and holds the backbone atom coordinates, amino acid sequence, and secondary structures of a protein chain. 
 """
-struct Chain <: AbstractVector{Residue}
+struct Chain{T} <: AbstractVector{Residue}
+    len::Int
     id::AbstractString
-    backbone::Backbone{4}
+    backbone::Backbone{3, T}
     aavector::Vector{Char}
     ssvector::Vector{Char}
+    oxygens::AbstractMatrix{T}
 
     function Chain(
         id::AbstractString,
-        backbone::Backbone{N};
+        backbone::Backbone{3, T};
         aavector::Vector{Char} = fill('G', length(backbone)),
         ssvector::Union{Vector{Char}, Vector{<:Integer}} = fill(' ', length(backbone)),
-    ) where N
-        @assert N == 3 || N == 4 "backbone must have 3 or 4 atoms per residue"
-        N == 3 && (backbone = add_oxygens(backbone))
-
-        @assert length(backbone) == length(aavector) == length(ssvector) "backbone, aavector, and ssvector must have the same length"
+        oxygens::AbstractMatrix{T} = get_oxygens(backbone),
+    ) where T
+        len = length(backbone)
+        @assert len == length(aavector) == length(ssvector) "backbone, aavector, and ssvector must have the same length"
         ssvector isa Vector{<:Integer} && (ssvector = get.("-HE", ssvector, ' '))
-
-        return new(id, backbone, aavector, ssvector)
+        return new{T}(len, id, backbone, aavector, ssvector, oxygens)
     end
 
     Chain(backbone::Backbone; kwargs...) = Chain("_", backbone; kwargs...) 
@@ -34,7 +36,17 @@ end
 @inline Base.size(chain::Chain) = (length(chain),)
 @inline Base.getindex(chain::Chain, i::Integer) = Residue(i, chain.backbone, chain.aavector[i], chain.ssvector[i])
 
+function Base.getproperty(chain::Chain, property::Symbol)
+    if property in fieldnames
+        return getfield(chain, property)
+    elseif property in chain.backbone.atomnames
+        return getindex(chain.backbone, property)
+    else
+        error("Chain does not have a field or atom named $property")
+    end
+end
+
 Base.summary(chain::Chain) = "Chain $(chain.id) with $(length(chain)) residue$(length(chain) == 1 ? "" : "s")"
 Base.show(io::IO, chain::Chain) = print(io, summary(chain))
 
-has_assigned_ss(chain::Chain) = has_assigned_ss(chain.ssvector)
+has_complete_ss(chain::Chain) = has_complete_ss(chain.ssvector)

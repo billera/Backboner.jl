@@ -8,7 +8,8 @@ import AssigningSecondaryStructure: assign_secondary_structure!, assign_secondar
 Uses a simplified version of DSSP to fill the secondary structure vector of each chain with '-' (coil/loop), 'H' (helix), and 'E' (strand).
 """
 function assign_secondary_structure!(protein::Protein)
-    ss_vectors = assign_secondary_structure([chain.backbone.coords for chain in protein])
+    coords_vector = [cat(chain.backbone.coords, chain.oxygen, dims=2) for chain in protein]
+    ss_vectors = assign_secondary_structure(coords_vector)
     for (chain, ssvector) in zip(protein, ss_vectors)
         @assert length(chain.ssvector) == length(ssvector)
         chain.ssvector .= ssvector

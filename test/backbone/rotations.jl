@@ -11,8 +11,8 @@
     end
 
     @testset "locs_and_rots" begin
-        protein = pdb_to_protein("data/1ASS.pdb")
-        backbone = remove_column(protein[1].backbone, 4)
+        protein = read_pdb("data/1ASS.pdb")
+        backbone = protein[1].backbone
         @test all(locs_and_rots_to_backbone(backbone_to_locs_and_rots(backbone)...) .≈ backbone)
     end
 

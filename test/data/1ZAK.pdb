@@ -191,7 +191,7 @@ REMARK 290       1555   X,Y,Z
 REMARK 290       2555   -Y,X-Y,Z                                                
 REMARK 290       3555   -X+Y,-X,Z                                               
 REMARK 290                                                                      
-REMARK 290     WHERE NNN -> OPERATOR NUMBER                                     
+REMARK 290     where ANN -> OPERATOR NUMBER                                     
 REMARK 290           MMM -> TRANSLATION VECTOR                                  
 REMARK 290                                                                      
 REMARK 290 CRYSTALLOGRAPHIC SYMMETRY TRANSFORMATIONS                            

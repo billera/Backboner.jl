@@ -11,19 +11,18 @@ const MEAN_BOND_ANGLE = 2.032538
 #=
 TODO: think about how to better integrate this with the Backbone type.
 could also probably distill the set of functions to be more concise and general,
-e.g. 
+e.g. dihedrals2xyz and dihedrals2xyz_exact could be one function with a keyword argument.
+there could even be a dihedrals type and we simply make constructors for it.
 =#
 
 """
 Returns the vectors and lengths connecting each pair of adjacent atoms in the backbone
 """
-function bonds_vecs_and_lens(backbone::Backbone{N}) where N
-    @assert N >= 3 "backbone needs at least the N, Cα and C atoms to calculate bond vectors"
-    bond_vectors = backbone_bond_vectors(backbone)
-    lengths = reshape(mapslices(norm, bond_vectors, dims=1), :)
-    return bond_vectors, lengths
+function bonds_vecs_and_lens(backbone::Backbone)
+    bond_vecs = bond_vectors(backbone)
+    lens = reshape(mapslices(norm, bond_vecs, dims=1), :)
+    return bond_vecs, lens
 end
-
 
 """
 Turns a list of vectors into a set of points starting at the origin, where p1 = 0, p2 = v1 + p1, p3 = v2 + p2, etc.

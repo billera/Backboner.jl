@@ -1,4 +1,4 @@
-export pdb_to_protein, protein_to_pdb
+export read_pdb, write_pdb
 
 const THREE_LETTER_AA_CODES = Dict(
     'A' => "ALA", 'R' => "ARG", 'N' => "ASN", 'D' => "ASP",
@@ -10,7 +10,7 @@ const THREE_LETTER_AA_CODES = Dict(
 
 const ONE_LETTER_AA_CODES = Dict(v => k for (k, v) in THREE_LETTER_AA_CODES)
 
-function collect_backbone_atoms(atoms::Vector{PDBTools.Atom})
+function collect_residues(atoms::Vector{PDBTools.Atom})
     residues = Vector{PDBTools.Atom}[]
     i = 1
     while i <= length(atoms) - 3 # Ensure there are at least four atoms left to process
@@ -26,23 +26,26 @@ function collect_backbone_atoms(atoms::Vector{PDBTools.Atom})
     return residues
 end
 
-function Backbone(atoms::Vector{PDBTools.Atom})
-    backbone_atoms = collect_backbone_atoms(atoms)
-    coords = zeros(Float32, (3, 4, length(backbone_atoms)))
-    for (i, residue) in enumerate(backbone_atoms)
-        for (j, atom) in enumerate(residue)
-            coords[:, j, i] = [atom.x, atom.y, atom.z]
-        end
-    end
-    return Backbone(coords)
-end
-
 function Chain(atoms::Vector{PDBTools.Atom})
     id = PDBTools.chain(atoms[1])
     @assert allequal(PDBTools.chain.(atoms)) "atoms must be from the same chain"
-    backbone = Backbone(atoms)
+
+    atoms_by_residue = collect_residues(atoms)
+    backbone_coords = zeros(Float32, (3, 3, length(atoms_by_residue)))
+    oxygens = zeros(Float32, (3, length(atoms_by_residue)))
+    for (i, residue_atoms) in enumerate(atoms_by_residue)
+        for (j, atom) in enumerate(residue_atoms)
+            if j == 4
+                oxygens[:, i] = [atom.x, atom.y, atom.z]
+            else
+                backbone_coords[:, j, i] = [atom.x, atom.y, atom.z]
+            end
+        end
+    end
+    backbone = Backbone(backbone_coords; atomnames=[:nitrogen, :alphacarbon, :carbon])
+
     aavector = [get(ONE_LETTER_AA_CODES, atom.resname, 'X') for atom in atoms if atom.name == "CA"]
-    return Chain(id, backbone, aavector=aavector)
+    return Chain(id, backbone, aavector=aavector, oxygens=oxygens)
 end
 
 function Protein(atoms::Vector{PDBTools.Atom})
@@ -53,22 +56,22 @@ function Protein(atoms::Vector{PDBTools.Atom})
 end
 
 """
-    pdb_to_protein(filename::String)
+    read_pdb(filename::String)
 
 Assumes that each residue starts with four atoms: N, CA, C, O.
 """
-pdb_to_protein(filename::String) = Protein(PDBTools.readPDB(filename))
+read_pdb(filename::String) = Protein(PDBTools.readPDB(filename))
 
-function protein_to_pdb(protein::Protein, filename, header=:auto, footer=:auto)
+function write_pdb(protein::Protein, filename, header=:auto, footer=:auto)
     atoms = PDBTools.Atom[]
     index = 0
     residue_index = 0
     for chain in protein
         L = length(chain)
-        for (resnum, (residue_coords, aa)) in enumerate(zip(eachslice(chain.backbone.coords, dims=3), chain.aavector))
+        for (resnum, (atom_coord_matrix, aa)) in enumerate(zip(eachslice(chain.backbone.coords, dims=3), chain.aavector))
             resname = get(THREE_LETTER_AA_CODES, aa, "XXX")
             residue_index += 1
-            for (name, atom_coord_matrix) in zip(["N", "CA", "C", "O"], eachcol(residue_coords))
+            for (name, pos) in zip(["N", "CA", "C", "O"], [eachcol(atom_coord_matrix); chain.repeated[:oxygen][:, resnum]])
                 index += 1
                 atom = PDBTools.Atom(
                     index = index,
@@ -77,7 +80,7 @@ function protein_to_pdb(protein::Protein, filename, header=:auto, footer=:auto)
                     chain = chain.id,
                     resnum = resnum,
                     residue = residue_index,
-                    x = atom_coord_matrix[1], y = atom_coord_matrix[2], z = atom_coord_matrix[3],
+                    x = pos[1], y = pos[2], z = pos[3],
                 )
                 push!(atoms, atom)
             end
@@ -86,10 +89,10 @@ function protein_to_pdb(protein::Protein, filename, header=:auto, footer=:auto)
         # reuses the magic vector from src/backbone/oxygen.jl
         # note: the magic vector is meant to be used to calculate the O atom position,
         # but this is basically using it to get the next N position, 
-        # so it's a hacky way to get a "random" OXT atom position
-        # not actually random -- it has the same orientation as the next-to-last residue
+        # so it's a hacky way to get an OXT atom position
         index += 1
-        last_N, last_CA, last_C, last_O = eachcol(chain.backbone.coords[:, :, L])
+        last_N, last_CA, last_C = eachcol(chain.backbone.coords[:, :, L])
+        last_O = chain.repeated[:oxygen][:, L]
         rot_matrix = get_rotation_matrix(last_CA, last_C, last_O)
         OXT_pos = rot_matrix' \ magic_vector + last_C
         OXT_atom = PDBTools.Atom(

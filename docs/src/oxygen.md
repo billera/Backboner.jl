@@ -5,7 +5,7 @@ The `Backbone` type has a type parameter `N` to represent the number of atoms pe
 ```jldoctest
 julia> using Backboner
 
-julia> protein = pdb_to_protein("test/data/1ZAK.pdb")
+julia> protein = read_pdb("test/data/1ZAK.pdb")
 2-element Protein{Float32}:
  Chain A with 220 residues
  Chain B with 220 residues

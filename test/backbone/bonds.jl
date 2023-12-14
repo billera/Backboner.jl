@@ -1,6 +1,6 @@
 @testset "distance.jl" begin
 
-    protein = pdb_to_protein("data/1ASS.pdb")
+    protein = read_pdb("data/1ASS.pdb")
     backbone = protein["A"].backbone
     cn_distances = carbonyl_nitrogen_distances(backbone)
     @test length(cn_distances) == length(backbone) - 1
